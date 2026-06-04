@@ -47,6 +47,7 @@ async def generate_report_task(report_id: str):
             api_keys = opts.get("api_keys") or {}
             google_key = api_keys.get("gemini")
             tavily_key = api_keys.get("tavily")
+            groq_key = api_keys.get("groq")
             
             # 1. Research Phase
             research_service = ResearchService(api_key=tavily_key)
@@ -57,11 +58,11 @@ async def generate_report_task(report_id: str):
             
             # 2. AI Sections
             sections = [
-                ("overview", CompanyOverviewSection(api_key=google_key), "Generating Company Overview"),
-                ("business_info", BusinessInfoSection(api_key=google_key), "Extracting Business Information"),
-                ("challenges", ChallengesSection(api_key=google_key), "Analyzing Challenges"),
-                ("ai_opportunities", AIOpportunitiesSection(api_key=google_key), "Identifying AI Opportunities"),
-                ("ceo_pitch", CEOPitchSection(api_key=google_key), "Drafting CEO Pitch")
+                ("overview", CompanyOverviewSection(api_key=google_key, groq_api_key=groq_key), "Generating Company Overview"),
+                ("business_info", BusinessInfoSection(api_key=google_key, groq_api_key=groq_key), "Extracting Business Information"),
+                ("challenges", ChallengesSection(api_key=google_key, groq_api_key=groq_key), "Analyzing Challenges"),
+                ("ai_opportunities", AIOpportunitiesSection(api_key=google_key, groq_api_key=groq_key), "Identifying AI Opportunities"),
+                ("ceo_pitch", CEOPitchSection(api_key=google_key, groq_api_key=groq_key), "Drafting CEO Pitch")
             ]
             
             results = {}

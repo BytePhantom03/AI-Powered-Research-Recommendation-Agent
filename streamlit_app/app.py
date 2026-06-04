@@ -365,11 +365,12 @@ with st.sidebar:
     st.caption("Keys are sent directly to the backend and never stored.")
     gemini_key = st.text_input("Gemini API Key", type="password", placeholder="AIzaSy...")
     tavily_key = st.text_input("Tavily API Key", type="password", placeholder="tvly-...")
+    groq_key = st.text_input("Groq API Key (Optional Fallback)", type="password", placeholder="gsk_...")
     st.divider()
     st.markdown("### ℹ️ About")
     st.caption(
-        "This tool uses **Gemini 2.5 Flash** for AI analysis and **Tavily** for live web research "
-        "to generate comprehensive company intelligence reports in under 3 minutes."
+        "This tool uses **Gemini 2.5 Flash** (with automatic fallback to Groq Llama 3) for AI analysis "
+        "and **Tavily** for live web research to generate comprehensive company intelligence reports in under 3 minutes."
     )
     st.divider()
     st.caption("Built with ❤️ using FastAPI, LangChain & Streamlit")
@@ -420,6 +421,7 @@ if generate_clicked:
                         "api_keys": {
                             "gemini": gemini_key,
                             "tavily": tavily_key,
+                            "groq": groq_key,
                         }
                     },
                 },

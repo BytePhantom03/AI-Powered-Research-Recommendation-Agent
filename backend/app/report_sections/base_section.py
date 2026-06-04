@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Type
+from typing import Dict, Any, Type, Optional
 from ..services.research_service import ResearchContext
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -8,23 +8,44 @@ from ..config import settings
 import json
 import re
 
-# Models to try in order — each has its own separate daily quota
-FALLBACK_MODELS = [
+# Gemini models to try in order — each has its own separate daily quota
+GEMINI_MODELS = [
     "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-1.5-flash",
 ]
 
+# Groq models to try as final fallback
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+]
+
+
+def _is_quota_error(e: Exception) -> bool:
+    err = str(e).lower()
+    return any(kw in err for kw in ("resource_exhausted", "429", "quota", "rate_limit", "rate limit"))
+
 
 class BaseReportSection(ABC):
-    def __init__(self, api_key: str = None):
-        self._api_key = api_key if api_key else settings.GOOGLE_API_KEY
+    def __init__(self, api_key: str = None, groq_api_key: str = None):
+        self._gemini_key = api_key or settings.GOOGLE_API_KEY
+        self._groq_key = groq_api_key
 
-    def _make_llm(self, model: str):
+    def _make_gemini(self, model: str):
         return ChatGoogleGenerativeAI(
             model=model,
             temperature=0,
-            google_api_key=self._api_key,
+            google_api_key=self._gemini_key,
+            max_tokens=4096,
+        )
+
+    def _make_groq(self, model: str):
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            model=model,
+            temperature=0,
+            groq_api_key=self._groq_key,
             max_tokens=4096,
         )
 
@@ -58,26 +79,31 @@ Respond with ONLY the JSON object, no markdown, no code blocks, no extra text.""
             "key_facts": json.dumps(context.key_facts),
         }
 
-        # Try each model until one succeeds
+        # Build ordered list of (provider, model, llm_factory) to try
+        attempts = []
+        for m in GEMINI_MODELS:
+            attempts.append(("Gemini", m, lambda model=m: self._make_gemini(model)))
+        if self._groq_key:
+            for m in GROQ_MODELS:
+                attempts.append(("Groq", m, lambda model=m: self._make_groq(model)))
+
         last_error = None
-        for model_name in FALLBACK_MODELS:
+        result = None
+        for provider, model_name, make_llm in attempts:
             try:
-                llm = self._make_llm(model_name)
+                llm = make_llm()
                 chain = prompt | llm
                 result = await chain.ainvoke(invoke_args)
-                print(f"  ✓ Success with model: {model_name}")
+                print(f"  ✓ Success with {provider}/{model_name}")
                 break
             except Exception as e:
                 last_error = e
-                err_str = str(e).lower()
-                # Only fallback on quota/rate-limit errors; re-raise others immediately
-                if "resource_exhausted" in err_str or "429" in err_str or "quota" in err_str:
-                    print(f"  ⚠ {model_name} quota exhausted, trying next model...")
+                if _is_quota_error(e):
+                    print(f"  ⚠ {provider}/{model_name} quota exhausted, trying next...")
                     continue
                 else:
                     raise
         else:
-            # All models failed
             raise last_error  # type: ignore[misc]
 
         # Extract JSON from the response
