@@ -29,12 +29,14 @@ class BaseReportSection(ABC):
     async def generate(self, context: ResearchContext) -> Dict[str, Any]:
         schema = self.get_pydantic_schema()
         schema_json = json.dumps(schema.model_json_schema(), indent=2)
+        # Escape curly braces so LangChain doesn't treat them as template variables
+        schema_json_escaped = schema_json.replace("{", "{{").replace("}", "}}")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", f"""You are an expert business intelligence analyst. Ground all responses in the provided research context.
 
 You MUST respond with a valid JSON object that exactly matches this schema:
-{schema_json}
+{schema_json_escaped}
 
 Respond with ONLY the JSON object, no markdown, no code blocks, no extra text."""),
             ("human", self.get_prompt_template())
