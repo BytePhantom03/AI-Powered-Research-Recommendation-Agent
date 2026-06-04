@@ -44,17 +44,19 @@ class PDFService:
             """Write text to PDF, with automatic ASCII fallback on failure."""
             text = safe_str(text)
             pdf.set_font(font_name, style, size)
+            # Force X to left margin in case previous call left it at the right margin
+            pdf.set_x(pdf.l_margin)
             try:
-                pdf.multi_cell(0, 8, txt=text)
+                pdf.multi_cell(0, 8, text=text, new_x="LMARGIN", new_y="NEXT")
             except Exception:
                 # ASCII fallback - guaranteed to work with any font
                 cleaned = ascii_fallback(text)
                 try:
-                    pdf.multi_cell(0, 8, txt=cleaned)
+                    pdf.multi_cell(0, 8, text=cleaned, new_x="LMARGIN", new_y="NEXT")
                 except Exception:
                     # Ultimate fallback - write placeholder
                     pdf.set_font("helvetica", "", size)
-                    pdf.multi_cell(0, 8, txt="[content omitted - encoding issue]")
+                    pdf.multi_cell(0, 8, text="[content omitted - encoding issue]", new_x="LMARGIN", new_y="NEXT")
 
         def add_heading(text, size=14):
             _write(text, style="B", size=size)
@@ -65,10 +67,10 @@ class PDFService:
         # Title
         try:
             pdf.set_font(font_name, "B", 16)
-            pdf.cell(0, 10, safe_str(f"Company Intelligence Report: {report.company.name}"), ln=True, align="C")
+            pdf.cell(0, 10, safe_str(f"Company Intelligence Report: {report.company.name}"), new_x="LMARGIN", new_y="NEXT", align="C")
         except Exception:
             pdf.set_font("helvetica", "B", 16)
-            pdf.cell(0, 10, ascii_fallback(f"Company Intelligence Report: {report.company.name}"), ln=True, align="C")
+            pdf.cell(0, 10, ascii_fallback(f"Company Intelligence Report: {report.company.name}"), new_x="LMARGIN", new_y="NEXT", align="C")
         pdf.ln(5)
 
         sections = report.sections or {}
