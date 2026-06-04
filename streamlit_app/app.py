@@ -12,12 +12,22 @@ API_URL = os.environ.get("API_URL", "http://backend:8000/v1")
 
 st.set_page_config(page_title="AI Research Agent", layout="wide")
 
+# Sidebar for Settings
+st.sidebar.title("⚙️ Settings")
+st.sidebar.markdown("Enter your API keys below. They are required to generate reports.")
+gemini_key = st.sidebar.text_input("Gemini API Key", type="password")
+tavily_key = st.sidebar.text_input("Tavily API Key", type="password")
+
 st.title("🏢 AI Company Research & Recommendation Agent")
 st.markdown("Generate a comprehensive business intelligence report on any company.")
 
 company_name = st.text_input("Enter Company Name (e.g., Adani Realty)", "")
 
 if st.button("Generate Report"):
+    if not gemini_key or not tavily_key:
+        st.error("Please enter both Gemini and Tavily API keys in the sidebar.")
+        st.stop()
+        
     if len(company_name) < 2:
         st.error("Company name must be at least 2 characters long.")
     else:
@@ -26,7 +36,15 @@ if st.button("Generate Report"):
             try:
                 response = requests.post(
                     f"{API_URL}/reports",
-                    json={"company_name": company_name, "options": {}}
+                    json={
+                        "company_name": company_name, 
+                        "options": {
+                            "api_keys": {
+                                "gemini": gemini_key,
+                                "tavily": tavily_key
+                            }
+                        }
+                    }
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -132,9 +150,26 @@ if st.button("Generate Report"):
             st.write(pitch.get("content", "N/A"))
             
         # Download JSON
-        st.download_button(
-            label="Download Raw JSON",
-            data=json.dumps(report_data, indent=2),
-            file_name=f"{report_data['company']['canonical_name']}_report.json",
-            mime="application/json"
-        )
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="Download Raw JSON",
+                data=json.dumps(report_data, indent=2),
+                file_name=f"{report_data['company']['canonical_name']}_report.json",
+                mime="application/json"
+            )
+            
+        with col2:
+            try:
+                pdf_res = requests.get(f"{API_URL}/reports/{report_id}/pdf")
+                if pdf_res.status_code == 200:
+                    st.download_button(
+                        label="Download PDF",
+                        data=pdf_res.content,
+                        file_name=f"{report_data['company']['canonical_name']}_report.pdf",
+                        mime="application/pdf"
+                    )
+                else:
+                    st.error("Failed to generate PDF.")
+            except Exception as e:
+                st.error(f"Failed to fetch PDF: {e}")
