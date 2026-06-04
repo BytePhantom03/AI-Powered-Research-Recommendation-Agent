@@ -3,7 +3,7 @@ from ..config import settings
 
 celery_app = Celery(
     "ai_research_agent",
-    broker=settings.CELERY_BROKER_URL,
+    broker=settings.CELERY_BROKER_URL or settings.REDIS_URL,
     backend=settings.REDIS_URL,
     include=["app.workers.tasks.report_tasks"]
 )
