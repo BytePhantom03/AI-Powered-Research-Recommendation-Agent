@@ -59,6 +59,11 @@ Respond with ONLY the JSON object, no markdown, no code blocks, no extra text.""
         content = content.strip()
         
         parsed = json.loads(content)
+        
+        # LLMs sometimes return a bare JSON list instead of wrapping it in an object (e.g. {"items": [...]})
+        if isinstance(parsed, list):
+            parsed = {"items": parsed}
+            
         # Validate against pydantic schema
         validated = schema(**parsed)
         return validated.model_dump()
