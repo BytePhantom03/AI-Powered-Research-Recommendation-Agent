@@ -12,7 +12,7 @@ class BaseReportSection(ABC):
     def __init__(self, api_key: str = None):
         key = api_key if api_key else settings.GOOGLE_API_KEY
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             temperature=0,
             google_api_key=key,
             max_tokens=4096,

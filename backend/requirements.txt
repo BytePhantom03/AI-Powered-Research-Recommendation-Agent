@@ -21,4 +21,4 @@ boto3==1.34.14
 fpdf2==2.8.7
 greenlet==3.0.3
 
-langchain-google-genai==1.0.6
+langchain-google-genai>=2.0.0
