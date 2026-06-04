@@ -41,8 +41,14 @@ async def generate_report_task(report_id: str):
         try:
             start_time = time.time()
             
+            # Extract custom API keys if provided
+            opts = report.options or {}
+            api_keys = opts.get("api_keys") or {}
+            google_key = api_keys.get("gemini")
+            tavily_key = api_keys.get("tavily")
+            
             # 1. Research Phase
-            research_service = ResearchService()
+            research_service = ResearchService(api_key=tavily_key)
             context = await research_service.fetch_context(report.company_name_raw)
             
             report.status = "PROCESSING"
@@ -50,11 +56,11 @@ async def generate_report_task(report_id: str):
             
             # 2. AI Sections
             sections = [
-                ("overview", CompanyOverviewSection(), "Generating Company Overview"),
-                ("business_info", BusinessInfoSection(), "Extracting Business Information"),
-                ("challenges", ChallengesSection(), "Analyzing Challenges"),
-                ("ai_opportunities", AIOpportunitiesSection(), "Identifying AI Opportunities"),
-                ("ceo_pitch", CEOPitchSection(), "Drafting CEO Pitch")
+                ("overview", CompanyOverviewSection(api_key=google_key), "Generating Company Overview"),
+                ("business_info", BusinessInfoSection(api_key=google_key), "Extracting Business Information"),
+                ("challenges", ChallengesSection(api_key=google_key), "Analyzing Challenges"),
+                ("ai_opportunities", AIOpportunitiesSection(api_key=google_key), "Identifying AI Opportunities"),
+                ("ceo_pitch", CEOPitchSection(api_key=google_key), "Drafting CEO Pitch")
             ]
             
             results = {}

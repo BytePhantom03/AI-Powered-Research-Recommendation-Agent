@@ -13,8 +13,9 @@ class ResearchContext:
     raw_results: List[Dict[str, Any]]
 
 class ResearchService:
-    def __init__(self):
-        self.tavily = TavilyClient(api_key=settings.TAVILY_API_KEY)
+    def __init__(self, api_key: str = None):
+        key = api_key if api_key else settings.TAVILY_API_KEY
+        self.tavily = TavilyClient(api_key=key)
 
     async def fetch_context(self, company_name: str) -> ResearchContext:
         query_company = f"{company_name} company overview business model"

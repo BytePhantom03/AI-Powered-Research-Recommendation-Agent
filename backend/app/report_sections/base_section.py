@@ -8,12 +8,13 @@ from ..config import settings
 import json
 
 class BaseReportSection(ABC):
-    def __init__(self):
+    def __init__(self, api_key: str = None):
+        key = api_key if api_key else settings.GOOGLE_API_KEY
         # We use Gemini instead of Anthropic
         self.llm = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash",
             temperature=0,
-            google_api_key=settings.GOOGLE_API_KEY,
+            google_api_key=key,
             max_tokens=4096,
         )
 
