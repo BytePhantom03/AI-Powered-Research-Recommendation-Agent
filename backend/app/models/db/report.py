@@ -1,13 +1,13 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, func, ForeignKey, Integer, BigInteger, Text, Numeric, JSON, Uuid
+from sqlalchemy import Column, String, DateTime, func, ForeignKey, Integer, BigInteger, Text, Numeric, JSON
 from .base import Base
 
 class Report(Base):
     __tablename__ = 'reports'
 
-    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(Uuid(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=True)
-    company_id = Column(Uuid(as_uuid=True), ForeignKey('companies.id'), index=True, nullable=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=True)
+    company_id = Column(String(36), ForeignKey('companies.id'), index=True, nullable=True)
     company_name_raw = Column(String(255), nullable=False)
     status = Column(String(50), default='PENDING', index=True)
     
@@ -39,7 +39,7 @@ class ReportEvent(Base):
     __tablename__ = 'report_events'
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    report_id = Column(Uuid(as_uuid=True), ForeignKey('reports.id'), index=True)
+    report_id = Column(String(36), ForeignKey('reports.id'), index=True)
     event_type = Column(String(100), nullable=False)
     payload = Column(JSON, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -48,7 +48,7 @@ class UsageLog(Base):
     __tablename__ = 'usage_logs'
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    user_id = Column(Uuid(as_uuid=True), ForeignKey('users.id'))
+    user_id = Column(String(36), ForeignKey('users.id'))
     action = Column(String(100))
     tokens_used = Column(Integer, default=0)
     cost_usd = Column(Numeric(10, 6), default=0)
