@@ -486,15 +486,23 @@ if generate_clicked:
 
         time.sleep(3)
 
-    # ─────────────────────────── FETCH & DISPLAY REPORT ───────────────────────────
+    # ─────────────────────────── FETCH REPORT ───────────────────────────
 
     try:
         report_res = requests.get(f"{API_URL}/reports/{report_id}")
         report_res.raise_for_status()
-        report_data = report_res.json()
+        st.session_state["report_data"] = report_res.json()
+        st.session_state["report_id"] = report_id
     except requests.exceptions.RequestException as e:
         st.error(f"Failed to fetch report: {e}")
         st.stop()
+
+# ─────────────────────────── DISPLAY REPORT ───────────────────────────
+
+if "report_data" in st.session_state:
+    report_data = st.session_state["report_data"]
+    report_id = st.session_state["report_id"]
+
 
     company = report_data.get("company", {})
     sections = report_data.get("sections", {})
