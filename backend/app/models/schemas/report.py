@@ -7,6 +7,7 @@ class ReportOptions(BaseModel):
     sections: List[str] = ["overview", "business_info", "challenges", "ai_opportunities", "ceo_pitch"]
     depth: str = "standard"
     export_format: List[str] = ["pdf", "json"]
+    api_keys: Optional[Dict[str, str]] = None
 
 class ReportRequest(BaseModel):
     company_name: str = Field(..., min_length=2, max_length=100)
