@@ -1,18 +1,11 @@
 from fpdf import FPDF
-import re
+import os
 from ..models.schemas.report import ReportResponse
 
-
-def sanitize_text(text):
-    """Strip all non-ASCII characters to guarantee fpdf2 can render the text."""
-    if text is None:
-        return "N/A"
-    text = str(text)
-    # Keep only printable ASCII (space through tilde, plus newlines/tabs)
-    text = re.sub(r'[^\x20-\x7E\n\t]', '', text)
-    # Collapse multiple spaces
-    text = re.sub(r'  +', ' ', text)
-    return text.strip() or "N/A"
+# Path to DejaVu Sans font (supports Unicode including ₹, ™, etc.)
+FONT_DIR = "/usr/share/fonts/truetype/dejavu"
+FONT_REGULAR = os.path.join(FONT_DIR, "DejaVuSans.ttf")
+FONT_BOLD = os.path.join(FONT_DIR, "DejaVuSans-Bold.ttf")
 
 
 class PDFService:
@@ -21,17 +14,26 @@ class PDFService:
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=15)
 
+        # Register Unicode font
+        if os.path.exists(FONT_REGULAR):
+            pdf.add_font("DejaVu", "", FONT_REGULAR, uni=True)
+            pdf.add_font("DejaVu", "B", FONT_BOLD, uni=True)
+            font_name = "DejaVu"
+        else:
+            # Fallback to helvetica if font not installed (local dev)
+            font_name = "helvetica"
+
         def add_heading(text, size=14):
-            pdf.set_font("helvetica", "B", size)
-            pdf.multi_cell(0, 10, txt=sanitize_text(text))
+            pdf.set_font(font_name, "B", size)
+            pdf.multi_cell(0, 10, txt=str(text or "N/A"))
 
         def add_text(text, bold=False):
-            pdf.set_font("helvetica", "B" if bold else "", 11)
-            pdf.multi_cell(0, 8, txt=sanitize_text(text))
+            pdf.set_font(font_name, "B" if bold else "", 11)
+            pdf.multi_cell(0, 8, txt=str(text or "N/A"))
 
         # Title
-        pdf.set_font("helvetica", "B", 16)
-        pdf.cell(0, 10, sanitize_text(f"Company Intelligence Report: {report.company.name}"), ln=True, align="C")
+        pdf.set_font(font_name, "B", 16)
+        pdf.cell(0, 10, str(f"Company Intelligence Report: {report.company.name}"), ln=True, align="C")
         pdf.ln(5)
 
         sections = report.sections or {}
