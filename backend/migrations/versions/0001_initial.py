@@ -19,7 +19,7 @@ def upgrade() -> None:
     # users table
     op.create_table(
         'users',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column('id', sa.Uuid(as_uuid=True), primary_key=True),
         sa.Column('email', sa.String(length=255), nullable=False),
         sa.Column('password_hash', sa.String(length=255), nullable=False),
         sa.Column('full_name', sa.String(length=255), nullable=True),
@@ -35,10 +35,10 @@ def upgrade() -> None:
     # companies table
     op.create_table(
         'companies',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column('id', sa.Uuid(as_uuid=True), primary_key=True),
         sa.Column('canonical_slug', sa.String(length=255), nullable=False),
         sa.Column('display_name', sa.String(length=255), nullable=False),
-        sa.Column('aliases', postgresql.ARRAY(sa.String()), nullable=True),
+        sa.Column('aliases', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column('industry', sa.String(length=255), nullable=True),
         sa.Column('headquarters', sa.String(length=255), nullable=True),
         sa.Column('website_url', sa.String(length=500), nullable=True),
@@ -47,14 +47,13 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True)
     )
     op.create_index(op.f('ix_companies_canonical_slug'), 'companies', ['canonical_slug'], unique=True)
-    op.create_index(op.f('ix_companies_aliases'), 'companies', ['aliases'], unique=False)
 
     # reports table
     op.create_table(
         'reports',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('company_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('id', sa.Uuid(as_uuid=True), primary_key=True),
+        sa.Column('user_id', sa.Uuid(as_uuid=True), nullable=True),
+        sa.Column('company_id', sa.Uuid(as_uuid=True), nullable=True),
         sa.Column('company_name_raw', sa.String(length=255), nullable=False),
         sa.Column('status', sa.String(length=50), nullable=True, server_default='PENDING'),
         sa.Column('section_overview', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
@@ -84,7 +83,7 @@ def upgrade() -> None:
     op.create_table(
         'report_events',
         sa.Column('id', sa.BigInteger(), autoincrement=True, primary_key=True),
-        sa.Column('report_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('report_id', sa.Uuid(as_uuid=True), nullable=True),
         sa.Column('event_type', sa.String(length=100), nullable=False),
         sa.Column('payload', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
@@ -96,7 +95,7 @@ def upgrade() -> None:
     op.create_table(
         'usage_logs',
         sa.Column('id', sa.BigInteger(), autoincrement=True, primary_key=True),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('user_id', sa.Uuid(as_uuid=True), nullable=True),
         sa.Column('action', sa.String(length=100), nullable=True),
         sa.Column('tokens_used', sa.Integer(), nullable=True, server_default='0'),
         sa.Column('cost_usd', sa.Numeric(precision=10, scale=6), nullable=True, server_default='0'),
