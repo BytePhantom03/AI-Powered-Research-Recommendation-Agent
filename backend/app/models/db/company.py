@@ -1,11 +1,12 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, func, JSON
 from .base import Base
+from .guid import GUID
 
 class Company(Base):
     __tablename__ = 'companies'
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
     canonical_slug = Column(String(255), unique=True, nullable=False, index=True)
     display_name = Column(String(255), nullable=False)
     aliases = Column(JSON, default=list)  # Replaced ARRAY with JSON for SQLite

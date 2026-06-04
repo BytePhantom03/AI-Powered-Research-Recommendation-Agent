@@ -1,11 +1,12 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, func
 from .base import Base
+from .guid import GUID
 
 class User(Base):
     __tablename__ = 'users'
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255))
