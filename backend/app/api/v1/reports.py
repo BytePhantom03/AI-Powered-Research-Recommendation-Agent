@@ -38,7 +38,7 @@ async def get_report_pdf(report_id: str, db: AsyncSession = Depends(get_db_sessi
     pdf_bytes = pdf_service.generate_pdf(report)
     
     return Response(
-        content=pdf_bytes,
+        content=bytes(pdf_bytes),
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{report.company.canonical_name}_report.pdf"'}
     )
