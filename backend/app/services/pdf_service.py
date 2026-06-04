@@ -8,15 +8,29 @@ class PDFService:
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=15)
         
-        # Helper for adding text
+        # Helper for adding text safely
         def add_text(text, font_family="helvetica", style="", size=12):
-            # Encode/decode to ignore unsupported unicode characters
-            text = str(text).encode('latin-1', 'replace').decode('latin-1')
+            if text is None:
+                text = "N/A"
+            text = str(text)
+            # Remove characters that can't be rendered in latin-1
+            text = text.encode('latin-1', 'replace').decode('latin-1')
+            # Replace any remaining problematic characters
+            text = text.replace('\x00', '')
             pdf.set_font(font_family, style, size)
-            pdf.multi_cell(0, 10, txt=text)
+            try:
+                pdf.multi_cell(0, 10, txt=text)
+            except Exception:
+                # Fallback: write line by line
+                for line in text.split('\n'):
+                    try:
+                        pdf.multi_cell(0, 10, txt=line[:200] if line else " ")
+                    except Exception:
+                        pdf.multi_cell(0, 10, txt="[content could not be rendered]")
             
         pdf.set_font("helvetica", "B", 16)
-        pdf.cell(0, 10, f"Company Intelligence Report: {report.company.name}", ln=True, align="C")
+        title = str(report.company.name).encode('latin-1', 'replace').decode('latin-1')
+        pdf.cell(0, 10, f"Company Intelligence Report: {title}", ln=True, align="C")
         pdf.ln(5)
         
         sections = report.sections or {}
