@@ -6,13 +6,13 @@ from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 from ..config import settings
 import json
+import re
 
 class BaseReportSection(ABC):
     def __init__(self, api_key: str = None):
         key = api_key if api_key else settings.GOOGLE_API_KEY
-        # We use Gemini instead of Anthropic
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            model="gemini-1.5-flash",
             temperature=0,
             google_api_key=key,
             max_tokens=4096,
@@ -27,14 +27,20 @@ class BaseReportSection(ABC):
         pass
 
     async def generate(self, context: ResearchContext) -> Dict[str, Any]:
+        schema = self.get_pydantic_schema()
+        schema_json = json.dumps(schema.model_json_schema(), indent=2)
+        
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an expert business intelligence analyst. You must ground all responses in the provided research context and avoid generic answers."),
+            ("system", f"""You are an expert business intelligence analyst. Ground all responses in the provided research context.
+
+You MUST respond with a valid JSON object that exactly matches this schema:
+{schema_json}
+
+Respond with ONLY the JSON object, no markdown, no code blocks, no extra text."""),
             ("human", self.get_prompt_template())
         ])
         
-        schema = self.get_pydantic_schema()
-        llm_with_schema = self.llm.with_structured_output(schema)
-        chain = prompt | llm_with_schema
+        chain = prompt | self.llm
         
         result = await chain.ainvoke({
             "company_name": context.company_name,
@@ -43,5 +49,14 @@ class BaseReportSection(ABC):
             "key_facts": json.dumps(context.key_facts)
         })
         
-        # Pydantic model to dict
-        return result.model_dump()
+        # Extract JSON from the response
+        content = result.content
+        # Strip markdown code fences if present
+        content = re.sub(r'^```(?:json)?\s*', '', content.strip(), flags=re.MULTILINE)
+        content = re.sub(r'```\s*$', '', content.strip(), flags=re.MULTILINE)
+        content = content.strip()
+        
+        parsed = json.loads(content)
+        # Validate against pydantic schema
+        validated = schema(**parsed)
+        return validated.model_dump()
