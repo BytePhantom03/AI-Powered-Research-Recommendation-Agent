@@ -11,6 +11,7 @@ from ...report_sections import (
 )
 from datetime import datetime
 import time
+import asyncio
 
 async def update_progress(db: AsyncSession, report: Report, step: int, total: int, task_name: str):
     progress = {
@@ -68,6 +69,9 @@ async def generate_report_task(report_id: str):
                 await update_progress(db, report, idx + 2, 6, task_msg)
                 section_res = await section_obj.generate(context)
                 results[section_key] = section_res
+                # Delay between API calls to respect Gemini free tier rate limits (5 req/min)
+                if idx < len(sections) - 1:
+                    await asyncio.sleep(15)
                 
             report.section_overview = results.get("overview")
             report.section_business_info = results.get("business_info")
